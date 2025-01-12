@@ -61,7 +61,7 @@ for _, linha in planilha.iterrows():
                         f"Por favor, regularize o pagamento.")
             kit.sendwhatmsg_instantly(whatsapp, mensagem, 15, True)
         
-        elif status == "Atrasado":  # Adiciona o caso para status Atrasado
+    elif status == "Atrasado":
             mensagem = (f"Oi, {inquilino}! ⚠️ "
                         f"O aluguel da casa {casa} (Endereço: {endereco}), "
                         f"no valor de R$ {valor}, está atrasado desde {vencimento}. "
