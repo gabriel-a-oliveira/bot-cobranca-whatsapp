@@ -16,7 +16,7 @@ dados = planilha_google.get_all_records()
 planilha = pd.DataFrame(dados)
 
 
-def GerarMensagem(status, inquilino, casa, endereco, valor, vencimento):
+def gerar_mensagem(status, inquilino, casa, endereco, valor, vencimento):
     if status == "Pendente":
         mensagem = (f"Olá, *{inquilino}*! 😊\n\n"
                     f"Esse é um lembrete de que o aluguel da casa "
@@ -32,11 +32,11 @@ def GerarMensagem(status, inquilino, casa, endereco, valor, vencimento):
     
     return mensagem
 
-def EnviarMensagemWhatsapp(whatsapp, mensagem):
+def enviar_mensagem_whatsapp_instantaneamente (whatsapp, mensagem):
     kit.sendwhatmsg_instantly(whatsapp, mensagem, 15, True)
     time.sleep(3)
 
-def PodeEnviarMensagem(ultima_cobranca, dias_permitidos=2):
+def pode_enviar_cobranca(ultima_cobranca, dias_permitidos=2):
     if ultima_cobranca:
         ultima_cobranca_date = datetime.strptime(ultima_cobranca, "%d/%m/%Y").date()
         dias_desde_ultima_cobranca = (datetime.now().date() - ultima_cobranca_date).days
@@ -44,10 +44,10 @@ def PodeEnviarMensagem(ultima_cobranca, dias_permitidos=2):
         
     return True
 
-def AtualizarUltimaCobranca(linha, ultima_cobranca_data):
+def atualizar_ultima_cobranca(linha, ultima_cobranca_data):
     planilha_google.update_cell(linha, planilha.columns.get_loc("Última Cobrança") + 1, ultima_cobranca_data)
 
-def AtualizarStatus(linha, novo_status):
+def atualizar_status(linha, novo_status):
     planilha_google.update_cell(linha, planilha.columns.get_loc("Status") + 1, novo_status)
 
 for _, linha in planilha.iterrows():
@@ -65,14 +65,14 @@ for _, linha in planilha.iterrows():
     dias_para_vencimento = (vencimento_date - datetime.now().date()).days
 
     if dias_para_vencimento < 0 and status != "Atrasado":
-        AtualizarStatus(_ + 2, "Atrasado")
+        atualizar_status(_ + 2, "Atrasado")
 
-    if status == "Pendente" and dias_para_vencimento == 0 and PodeEnviarMensagem(ultima_cobranca):
-        mensagem = GerarMensagem(status, inquilino, casa, endereco, valor, vencimento)
-        EnviarMensagemWhatsapp(whatsapp, mensagem)
-        AtualizarUltimaCobranca(_ + 2, datetime.now().strftime("%d/%m/%Y"))
+    if status == "Pendente" and dias_para_vencimento == 0 and pode_enviar_cobranca(ultima_cobranca):
+        mensagem = gerar_mensagem(status, inquilino, casa, endereco, valor, vencimento)
+        enviar_mensagem_whatsapp_instantaneamente(whatsapp, mensagem)
+        atualizar_ultima_cobranca(_ + 2, datetime.now().strftime("%d/%m/%Y"))
 
-    elif status == "Atrasado" and dias_para_vencimento < 0 and PodeEnviarMensagem(ultima_cobranca):
-            mensagem = GerarMensagem(status, inquilino, casa, endereco, valor, vencimento)
-            EnviarMensagemWhatsapp(whatsapp, mensagem)
-            AtualizarUltimaCobranca(_ + 2, datetime.now().strftime("%d/%m/%Y"))
+    elif status == "Atrasado" and dias_para_vencimento < 0 and pode_enviar_cobranca(ultima_cobranca):
+            mensagem = gerar_mensagem(status, inquilino, casa, endereco, valor, vencimento)
+            enviar_mensagem_whatsapp_instantaneamente(whatsapp, mensagem)
+            atualizar_ultima_cobranca(_ + 2, datetime.now().strftime("%d/%m/%Y"))
