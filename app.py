@@ -6,21 +6,16 @@ import time
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-# Configurar o acesso à planilha do Google Sheets
 scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-credentials_path = "./credenciais.json"  # Caminho direto para o arquivo de credenciais
+credentials_path = "./credenciais.json" 
 credentials = ServiceAccountCredentials.from_json_keyfile_name(credentials_path, scopes)
 cliente = gspread.authorize(credentials)
 
-# Acessa a planilha pelo nome
 planilha_google = cliente.open("CobrançaInquilino").sheet1
 
-# Converte os dados da planilha em um DataFrame do pandas
 dados = planilha_google.get_all_records()
 planilha = pd.DataFrame(dados)
 
-# Data atual
-hoje = datetime.now().date()
 
 def GerarMensagem(status, inquilino, casa, endereco, valor, vencimento):
     if status == "Pendente":
@@ -52,12 +47,9 @@ for _, linha in planilha.iterrows():
     status = linha['Status']
     
     whatsapp = "+55" + whatsapp.strip()
-
-    # Converte a data de vencimento
     vencimento_date = datetime.strptime(vencimento, "%d/%m/%Y").date()
-    dias_para_vencimento = (vencimento_date - hoje).days
+    dias_para_vencimento = (vencimento_date - datetime.now().date()).days
 
-    # Envia cobranças
     if status == "Pendente" and dias_para_vencimento == 0:
         mensagem = GerarMensagem(status, inquilino, casa, endereco, valor, vencimento)
         EnviarMensagemWhatsapp(whatsapp, mensagem)
