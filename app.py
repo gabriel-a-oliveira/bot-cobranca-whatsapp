@@ -1,8 +1,7 @@
-import os
 from datetime import datetime
 import pandas as pd
 import pywhatkit as kit
-import pyautogui  # Biblioteca para automatizar pressionamentos de teclas
+import pyautogui
 import time
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
@@ -23,52 +22,46 @@ planilha = pd.DataFrame(dados)
 # Data atual
 hoje = datetime.now().date()
 
-# Verifica cada aluguel
+def GerarMensagem(status, inquilino, casa, endereco, valor, vencimento):
+    if status == "Pendente":
+        mensagem = (f"Olá, *{inquilino}*! 😊\n\n"
+                    f"Esse é um lembrete de que o aluguel da casa "
+                    f"(Endereço: {endereco}) no valor de *R$ {valor}*, *vence hoje ({vencimento})*.\n\n"
+                    f"Por favor, não se esqueça de realizar o pagamento. Caso já tenha feito, desconsidere esta mensagem.")
+        
+    elif status == "Atrasado":
+        mensagem = (f"Oi, *{inquilino}*! ⚠️\n\n"
+                        f"Infelizmente, o aluguel da casa {casa} (Endereço: {endereco}) "
+                        f"no valor de *R$ {valor}* está atrasado desde *{vencimento}*. \n\n"
+                        f"Pedimos, por gentileza, que regularize o pagamento o quanto antes para evitar inconvenientes.\n\n"
+                        f"Agradecemos pela sua atenção e compreensão.")
+    
+    return mensagem
+
+def EnviarMensagemWhatsapp(whatsapp, mensagem):
+    kit.sendwhatmsg_instantly(whatsapp, mensagem, 15, True)
+    time.sleep(3)
+        
 for _, linha in planilha.iterrows():
     casa = linha['Casa']
     inquilino = linha['Inquilino']
-    whatsapp = str(linha['WhatsApp'])  # Converter para string
+    whatsapp = str(linha['WhatsApp'])
     endereco = linha['Endereço']
     valor = linha['Valor']
     vencimento = linha['Vencimento']
     status = linha['Status']
     
-    # Garantir que o número de WhatsApp tenha o código do país
-    whatsapp = "+55" + whatsapp.strip()  # Adiciona o código do país (Brasil)
+    whatsapp = "+55" + whatsapp.strip()
 
     # Converte a data de vencimento
     vencimento_date = datetime.strptime(vencimento, "%d/%m/%Y").date()
     dias_para_vencimento = (vencimento_date - hoje).days
 
-    # Envia lembretes ou cobranças
-    if status == "Pendente":
-        if dias_para_vencimento == 5:  # Lembrete 5 dias antes
-            
-            mensagem = (f"Olá, {inquilino}! 😊 "
-                        f"Lembrete: o aluguel da casa {casa} (Endereço: {endereco}), "
-                        f"no valor de R$ {valor}, vence em 5 dias ({vencimento}).")
-            kit.sendwhatmsg_instantly(whatsapp, mensagem, 15, True)
-            
-            time.sleep(10)  # Aumenta o tempo de espera para garantir que a página tenha carregado
-            pyautogui.click(200, 200)  # Clica no campo de texto do WhatsApp para garantir o foco
-            time.sleep(2)  # Espera 2 segundos
-            pyautogui.press('enter')  # Simula o pressionamento da tecla 'Enter' para enviar a mensagem
+    # Envia cobranças
+    if status == "Pendente" and dias_para_vencimento == 0:
+        mensagem = GerarMensagem(status, inquilino, casa, endereco, valor, vencimento)
+        EnviarMensagemWhatsapp(whatsapp, mensagem)
 
-        elif dias_para_vencimento < 0:  # Cobrança de atraso
-            mensagem = (f"Oi, {inquilino}! ⚠️ "
-                        f"O aluguel da casa {casa} (Endereço: {endereco}), "
-                        f"no valor de R$ {valor}, está atrasado desde {vencimento}. "
-                        f"Por favor, regularize o pagamento.")
-            kit.sendwhatmsg_instantly(whatsapp, mensagem, 15, True)
-        
-    elif status == "Atrasado":
-            mensagem = (f"Oi, {inquilino}! ⚠️ "
-                        f"O aluguel da casa {casa} (Endereço: {endereco}), "
-                        f"no valor de R$ {valor}, está atrasado desde {vencimento}. "
-                        f"Por favor, regularize o pagamento.")
-            kit.sendwhatmsg_instantly(whatsapp, mensagem, 15, True)
-            
-            time.sleep(10)  # Aumenta o tempo de espera para garantir que a página tenha carregado
-            pyautogui.click(200, 200)  # Clica no campo de texto do WhatsApp para garantir o foco
-            time.sleep(2)  # Espera 2 segundos
-            pyautogui.press('enter')  # Simula o pressionamento da tecla 'Enter' para enviar a mensagem
+    elif status == "Atrasado" and dias_para_vencimento < 0:
+            mensagem = GerarMensagem(status, inquilino, casa, endereco, valor, vencimento)
+            EnviarMensagemWhatsapp(whatsapp, mensagem)
