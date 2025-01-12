@@ -5,7 +5,6 @@ import time
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import tkinter as tk
-from tkinter import messagebox
 
 def centralizar_janela(root, largura, altura):
     screen_width = root.winfo_screenwidth()
